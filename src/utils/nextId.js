@@ -1,7 +1,7 @@
-const crypto = require("crypto");
+const crypto = require("crypto")
 
 function nextId() {
-  return crypto.randomBytes(16).toString("hex");
+  return crypto.randomBytes(16).toString("hex")
 }
 
-module.exports = nextId;
+module.exports = nextId
