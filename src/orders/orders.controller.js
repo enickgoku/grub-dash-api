@@ -7,3 +7,160 @@ const orders = require(path.resolve("src/data/orders-data"))
 const nextId = require("../utils/nextId")
 
 // TODO: Implement the /orders handlers needed to make the tests pass
+
+const hasDeliveryProperty = (req, res, next) => {
+  const { data = {} } = req.body
+  if (!data.deliverTo) {
+    next({
+      status: 400,
+      message: "Order must include a deliverTo property."
+    })
+  }
+  res.locals.reqBody = data
+  return next()
+}
+
+const hasMobileNumberProperty = (req, res, next) => {
+  const reqBody = res.locals.reqBody
+
+  if (!reqBody.mobileNumber) {
+    next({
+      status: 400,
+      message: "Order must include a mobileNumber property."
+    })
+  }
+  next()
+}
+
+const hasDishesProperty = (req, res, next) => {
+  const reqBody = res.locals.reqBody
+
+  if (!reqBody.dishes || !reqBody.dishes.length || !Array.isArray(reqBody.dishes)) {
+    next({
+      status: 400,
+      message: "Order must include at least one dish."
+    })
+  }
+  next()
+}
+
+const bodyHasDishQuantityProperty = (req, res, next) => {
+  const dishes = res.locals.reqBody.dishes
+
+  const indexesOfDishesWithoutQuantityProperty = dishes.reduce(
+    (acc, dish, index) => {
+      if (
+        !dish.quantity ||
+        !dish.quantity > 0 ||
+        typeof dish.quantity !== "number"
+      ) {
+        acc.push(index)
+        return acc
+      }
+      return acc
+    },
+    []
+  )
+
+  if (!indexesOfDishesWithoutQuantityProperty.length) {
+    // All dishes have the right quantity property
+    return next()
+  }
+
+  // If there are dishes without the right quantity property, the following code will run:
+  if (indexesOfDishesWithoutQuantityProperty.length > 1) {
+    const stringOfDishIndex = indexesOfDishesWithoutQuantityProperty.join(", ");
+
+    next({
+      status: 400,
+      message: `Dishes ${stringOfDishIndex} must have a quantity that is an integer greater than 0.`,
+    })
+  }
+
+  next({
+    status: 400,
+    message: `Dish ${indexesOfDishesWithoutQuantityProperty} must have a quantity that is an integer greater than 0.`,
+  })
+}
+
+const orderExists = (req, res, next) => {
+  const { orderId } = req.params
+  const foundOrder = orders.find(order => order.id === orderId)
+
+  if (foundOrder) {
+    res.locals.order = foundOrder
+    res.locals.orderId = orderId
+
+    return next()
+  }
+  next({
+    status: 400,
+    message: `No matching order is found for orderId ${orderId}.`
+  })
+}
+
+// Put requests validation
+const bodyIdMatchesRoute = (req, res, next) => {
+  const orderId = res.locals.orderId
+  const reqBody = res.locals.reqBody
+
+  if(reqBody.id) {
+    if(reqBody.id === orderId) {
+      return next()
+    }
+    next({
+      status: 400,
+      message: `Order id does not match route id. Order: ${reqBody.id}, Route: ${orderId}`
+    })
+  }
+  return next()
+}
+
+const hasStatusProperty = (req, res, next) => {
+  const reqBody = res.locals.reqBody
+
+  if (!reqBody.status || reqBody.status === "invalid") {
+    next({
+      status: 400,
+      message: "Order must have a status of pending, preparing, out-for-delivery, or delivered."
+    })
+  }
+
+  if (reqBody.status === "delivered") {
+    next({
+      status: 400,
+      message: "A delivered order cannot be changed.",
+    })
+  }
+  return next()
+}
+
+const orderIsPending = (req, res, next) => {
+  const order = res.locals.order
+  
+  if (order.status !== "pending") {
+    next({
+      status: 400,
+      message: "An order cannot be deleted unless it is pending.",
+    })
+  }
+  return next()
+}
+
+const list = (req, res) => {
+  res.json({ data: orders })
+}
+
+const create = (req, res) => {
+  const reqBody = res.locals.reqBody
+  const newOrder = {
+    ...reqBody,
+    id: nextId()
+  }
+  orders.push(newOrder)
+  res.status(201).json({ data: newOrder })
+}
+
+module.exports = {
+  list
+}
