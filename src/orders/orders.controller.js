@@ -94,7 +94,7 @@ const orderExists = (req, res, next) => {
     return next()
   }
   next({
-    status: 400,
+    status: 404,
     message: `No matching order is found for orderId ${orderId}.`
   })
 }
@@ -147,8 +147,33 @@ const orderIsPending = (req, res, next) => {
   return next()
 }
 
-const list = (req, res) => {
-  res.json({ data: orders })
+const destroy = (req, res) => {
+  const orderId = res.locals.orderId
+  const orderIndex = orders.findIndex(order => order.id === orderId)
+
+  orders.splice(orderIndex, 1)
+  res.sendStatus(204)
+}
+
+const update = (req, res) => {
+  const reqBody = res.locals.reqBody
+  const order = res.locals.order
+
+  const existingOrderProperties = Object.getOwnPropertyNames(order)
+
+  for (let i = 0; i < existingOrderProperties.length; i++) {
+    // Accessing each order object key within the array
+    let propName = existingOrderProperties[i]
+    // Updating each value if there is a difference between the existing order and the req body order
+    if (propName !== "id" && order[propName] !== reqBody[propName]) {
+      order[propName] = reqBody[propName]
+    }
+  }
+  res.json({ data: order });
+}
+
+const read = (req, res) => {
+  res.json({ data: res.locals.order })
 }
 
 const create = (req, res) => {
@@ -161,6 +186,29 @@ const create = (req, res) => {
   res.status(201).json({ data: newOrder })
 }
 
+const list = (req, res) => {
+  res.json({ data: orders })
+}
+
 module.exports = {
-  list
+  create: [
+    hasDeliveryProperty,
+    hasMobileNumberProperty,
+    hasDishesProperty,
+    bodyHasDishQuantityProperty,
+    create,
+  ],
+  read: [orderExists, read],
+  update: [
+    orderExists,
+    hasDeliveryProperty,
+    hasMobileNumberProperty,
+    hasDishesProperty,
+    bodyHasDishQuantityProperty,
+    bodyIdMatchesRoute,
+    hasStatusProperty,
+    update,
+  ],
+  delete: [orderExists, orderIsPending, destroy],
+  list,
 }
