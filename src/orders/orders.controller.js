@@ -8,7 +8,7 @@ const nextId = require("../utils/nextId")
 
 // TODO: Implement the /orders handlers needed to make the tests pass
 
-const hasDeliveryProperty = (req, res, next) => {
+function hasDeliveryProperty(req, res, next) {
   const { data = {} } = req.body
   if (!data.deliverTo) {
     next({
@@ -20,7 +20,7 @@ const hasDeliveryProperty = (req, res, next) => {
   return next()
 }
 
-const hasMobileNumberProperty = (req, res, next) => {
+function hasMobileNumberProperty(req, res, next) {
   const reqBody = res.locals.reqBody
 
   if (!reqBody.mobileNumber) {
@@ -32,7 +32,7 @@ const hasMobileNumberProperty = (req, res, next) => {
   next()
 }
 
-const hasDishesProperty = (req, res, next) => {
+function hasDishesProperty(req, res, next) {
   const reqBody = res.locals.reqBody
 
   if (!reqBody.dishes || !reqBody.dishes.length || !Array.isArray(reqBody.dishes)) {
@@ -44,7 +44,7 @@ const hasDishesProperty = (req, res, next) => {
   next()
 }
 
-const bodyHasDishQuantityProperty = (req, res, next) => {
+function bodyHasDishQuantityProperty(req, res, next) {
   const dishes = res.locals.reqBody.dishes
 
   const indexesOfDishesWithoutQuantityProperty = dishes.reduce(
@@ -83,7 +83,7 @@ const bodyHasDishQuantityProperty = (req, res, next) => {
   })
 }
 
-const orderExists = (req, res, next) => {
+function orderExists(req, res, next) {
   const { orderId } = req.params
   const foundOrder = orders.find(order => order.id === orderId)
 
@@ -100,7 +100,7 @@ const orderExists = (req, res, next) => {
 }
 
 // Put requests validation
-const bodyIdMatchesRoute = (req, res, next) => {
+function bodyIdMatchesRoute(req, res, next) {
   const orderId = res.locals.orderId
   const reqBody = res.locals.reqBody
 
@@ -116,7 +116,7 @@ const bodyIdMatchesRoute = (req, res, next) => {
   return next()
 }
 
-const hasStatusProperty = (req, res, next) => {
+function hasStatusProperty(req, res, next) {
   const reqBody = res.locals.reqBody
 
   if (!reqBody.status || reqBody.status === "invalid") {
@@ -135,7 +135,7 @@ const hasStatusProperty = (req, res, next) => {
   return next()
 }
 
-const orderIsPending = (req, res, next) => {
+function orderIsPending(req, res, next) {
   const order = res.locals.order
   
   if (order.status !== "pending") {
@@ -147,7 +147,7 @@ const orderIsPending = (req, res, next) => {
   return next()
 }
 
-const destroy = (req, res) => {
+function destroy(req, res) {
   const orderId = res.locals.orderId
   const orderIndex = orders.findIndex(order => order.id === orderId)
 
@@ -155,7 +155,7 @@ const destroy = (req, res) => {
   res.sendStatus(204)
 }
 
-const update = (req, res) => {
+function update(req, res) {
   const reqBody = res.locals.reqBody
   const order = res.locals.order
 
@@ -172,11 +172,11 @@ const update = (req, res) => {
   res.json({ data: order });
 }
 
-const read = (req, res) => {
+function read(req, res) {
   res.json({ data: res.locals.order })
 }
 
-const create = (req, res) => {
+function create(req, res) {
   const reqBody = res.locals.reqBody
   const newOrder = {
     ...reqBody,
@@ -186,7 +186,7 @@ const create = (req, res) => {
   res.status(201).json({ data: newOrder })
 }
 
-const list = (req, res) => {
+function list(req, res) {
   res.json({ data: orders })
 }
 
